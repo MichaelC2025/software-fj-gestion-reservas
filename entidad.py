@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod  # Módulo estándar para definir clases y m
 from datetime import datetime  # Módulo para registrar la fecha y hora de creación de la entidad
 from excepciones import ParametroFaltanteError  # Excepción personalizada para parámetros obligatorios
 
+
 class EntidadSistema(ABC):
     """Clase abstracta base para todas las entidades del sistema (Clientes, Servicios, Reservas)."""
 
