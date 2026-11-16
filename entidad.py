@@ -19,26 +19,26 @@ class EntidadSistema(ABC):
         self.__id_entidad = str(id_entidad).strip()  # Encapsula el ID como atributo privado
         self.__fecha_creacion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Guarda fecha de creación
 
-@property
+    @property
     def id_entidad(self):
         """Getter que permite consultar el identificador único de la entidad."""
         return self.__id_entidad  # Retorna el ID encapsulado de solo lectura
 
-@property
+    @property
     def fecha_creacion(self):
         """Getter que permite consultar la fecha y hora en que se creó la entidad."""
         return self.__fecha_creacion  # Retorna la marca de tiempo de creación
 
-@abstractmethod
+    @abstractmethod
     def validar_datos(self):
         """Método abstracto que obliga a las clases hijas a validar sus propios atributos."""
         pass  # Cada clase derivada debe implementar su lógica de validación
 
-@abstractmethod
+    @abstractmethod
     def obtener_resumen(self):
         """Método abstracto que obliga a las clases hijas a retornar una descripción legible."""
         pass  # Cada clase derivada debe definir cómo se presenta su información
 
-def __str__(self):
+    def __str__(self):
         """Representación en cadena estándar de cualquier entidad del sistema."""
         return f"[{self.__id_entidad}] {self.obtener_resumen()} (Creado: {self.__fecha_creacion})"
