@@ -8,10 +8,11 @@ from entidad import EntidadSistema  # Importa la clase abstracta base
 from excepciones import ClienteInvalidoError, ParametroFaltanteError, OperacionNoPermitidaError  # Excepciones del sistema
 from logger import registrar_info, registrar_error  # Funciones para registrar eventos en software_fj.log
 
+
 class Cliente(EntidadSistema):
     """Clase que representa a un cliente de Software FJ con encapsulación y validaciones estrictas."""
 
-def __init__(self, id_cliente, nombre, correo, telefono):
+    def __init__(self, id_cliente, nombre, correo, telefono):
         super().__init__(id_cliente)  # Inicializa id_entidad y fecha_creacion en la clase padre
         self.__nombre = None  # Inicializa atributo privado para el nombre completo
         self.__correo = None  # Inicializa atributo privado para el correo electrónico
@@ -118,7 +119,41 @@ class GestorClientes:
             pass  # Punto de cierre seguro de la transacción en memoria
 
     def buscar_cliente(self, id_cliente):
-                      
-                      
-                      
-                      ):
+        """Busca un cliente por su identificador dentro de la lista en memoria."""
+        if not id_cliente or str(id_cliente).strip() == "":  # Valida que se envíe un ID para buscar
+            error = ParametroFaltanteError("id_cliente")  # Prepara excepción FJ-004
+            registrar_error(error)  # Registra el fallo en el log
+            raise error  # Lanza la excepción
+
+        for cliente in self.__clientes:  # Recorre la lista interna de clientes
+            if cliente.id_entidad == str(id_cliente).strip():  # Compara el identificador
+                return cliente  # Retorna el objeto Cliente encontrado
+
+        # Si termina el ciclo sin encontrarlo, lanza excepción personalizada y la registra
+        error_no_encontrado = ClienteInvalidoError(f"No se encontró ningún cliente con el ID '{id_cliente}'.")
+        registrar_error(error_no_encontrado)  # Guarda el error en software_fj.log
+        raise error_no_encontrado  # Lanza FJ-001
+
+
+# Prueba rápida: solo se ejecuta al correr este archivo directamente
+if __name__ == "__main__":
+    gestor = GestorClientes()  # Crea el gestor en memoria
+
+    # Prueba 1: Registro válido
+    try:
+        c1 = gestor.registrar_cliente("CLI-01", "Laura Gómez", "laura@correo.com", "3001234567")
+        print("Registro exitoso:", c1)
+    except Exception as err:
+        print("Fallo inesperado:", err)
+
+    # Prueba 2: Registro inválido (correo sin @) para verificar captura y log
+    try:
+        gestor.registrar_cliente("CLI-02", "Carlos Ruiz", "carlos_sin_arroba.com", "3109876543")
+    except ClienteInvalidoError as err:
+        print("Excepción capturada correctamente:", err)
+
+    # Prueba 3: Parámetro faltante (nombre vacío)
+    try:
+        gestor.registrar_cliente("CLI-03", "", "ana@correo.com", "3205554433")
+    except ParametroFaltanteError as err:
+        print("Excepción capturada correctamente:", err)
