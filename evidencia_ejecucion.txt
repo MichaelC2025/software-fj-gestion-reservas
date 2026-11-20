@@ -1,0 +1,69 @@
+﻿===========================================================================
+INICIANDO SISTEMA INTEGRAL DE GESTI├ôN - SOFTWARE FJ (SIN BASE DE DATOS)
+===========================================================================
+
+--- Operaci├│n #1: Registro v├ílido de cliente (Ana Mar├¡a G├│mez) ---
+[├ëXITO] [CLI-01] Cliente: Ana Mar├¡a G├│mez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #1.
+
+--- Operaci├│n #2: Registro v├ílido de cliente (Carlos Andr├®s Ruiz) ---
+[├ëXITO] [CLI-02] Cliente: Carlos Andr├®s Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #2.
+
+--- Operaci├│n #3: Registro inv├ílido de cliente (correo mal formado) ---
+[ERROR CONTROLADO] [FJ-001] El correo 'luisperez_sin_arroba.com' no tiene un formato v├ílido. -> El sistema contin├║a operando.
+Fin de validaci├│n Op #3.
+
+--- Operaci├│n #4: Creaci├│n v├ílida de servicio: Sala de Juntas Ejecutiva ---
+[├ëXITO] [SRV-01] Sala 'Sala Innovaci├│n Norte' (Capacidad: 12 pers., sin proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #4.
+
+--- Operaci├│n #5: Creaci├│n v├ílida de servicio: Alquiler Workstation Dell ---
+[├ëXITO] [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Port├ítil | Stock: 2] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #5.
+
+--- Operaci├│n #6: Creaci├│n v├ílida de servicio: Asesor├¡a en Arquitectura Cloud ---
+[├ëXITO] [SRV-03] Asesor├¡a 'Consultor├¡a Cloud AWS' [├ürea: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: Disponible (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #6.
+
+--- Operaci├│n #7: Creaci├│n inv├ílida de servicio (tarifa negativa) ---
+[ERROR CONTROLADO] [FJ-005] La tarifa base debe ser mayor a cero. -> El sistema contin├║a operando.
+Fin de validaci├│n Op #7.
+
+--- Operaci├│n #8: Reserva v├ílida de sala (6h con descuento autom├ítico), confirmaci├│n y procesamiento ---
+[├ëXITO] [RES-01] Reserva de Ana Mar├¡a G├│mez -> Sala Innovaci├│n Norte (6.0h) | Total: $514,080.00 | Estado: PROCESADA (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #8.
+
+--- Operaci├│n #9: Reserva v├ílida de equipo con descuento del 5 %, confirmaci├│n y posterior cancelaci├│n ---
+[├ëXITO] [RES-02] Reserva de Carlos Andr├®s Ruiz -> Workstation Precision 5570 (4.0h) | Total: $214,200.00 | Estado: CANCELADA (Creado: 2026-11-19 21:06:51)
+Fin de validaci├│n Op #9.
+
+--- Operaci├│n #10: Intento de reserva inv├ílido (duraci├│n <= 0) ---
+[ERROR CONTROLADO] [FJ-003] La duraci├│n de la reserva debe ser mayor a cero. -> El sistema contin├║a operando.
+Fin de validaci├│n Op #10.
+
+--- Operaci├│n #11: Intento de reserva inv├ílido (servicio no disponible) ---
+[ERROR CONTROLADO] [FJ-002] El servicio 'Consultor├¡a Cloud AWS' no est├í disponible actualmente. -> El sistema contin├║a operando.
+Fin de validaci├│n Op #11.
+
+--- Operaci├│n #12: Operaci├│n no permitida (cancelar la reserva RES-01 que ya fue PROCESADA) ---
+[ERROR CONTROLADO] [FJ-006] No se puede cancelar la reserva 'RES-01' porque ya fue procesada. -> El sistema contin├║a operando.
+Fin de validaci├│n Op #12.
+
+===========================================================================
+RESUMEN FINAL DEL ESTADO EN MEMORIA (SOFTWARE FJ)
+===========================================================================
+Total Clientes v├ílidos registrados : 2
+  - [CLI-01] Cliente: Ana Mar├¡a G├│mez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:06:51)
+  - [CLI-02] Cliente: Carlos Andr├®s Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:06:51)
+
+Total Servicios v├ílidos en cat├ílogo : 3
+  - [SRV-01] Sala 'Sala Innovaci├│n Norte' (Capacidad: 12 pers., sin proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:06:51)
+  - [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Port├ítil | Stock: 2] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:06:51)
+  - [SRV-03] Asesor├¡a 'Consultor├¡a Cloud AWS' [├ürea: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: No disponible (Creado: 2026-11-19 21:06:51)
+
+Total Reservas registradas en memoria: 2
+  - [RES-01] Reserva de Ana Mar├¡a G├│mez -> Sala Innovaci├│n Norte (6.0h) | Total: $514,080.00 | Estado: PROCESADA (Creado: 2026-11-19 21:06:51)
+  - [RES-02] Reserva de Carlos Andr├®s Ruiz -> Workstation Precision 5570 (4.0h) | Total: $214,200.00 | Estado: CANCELADA (Creado: 2026-11-19 21:06:51)
+
+Todos los eventos y errores quedaron auditados en: 'software_fj.log'
