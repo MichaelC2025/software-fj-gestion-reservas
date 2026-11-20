@@ -3,67 +3,110 @@ INICIANDO SISTEMA INTEGRAL DE GESTIÓN - SOFTWARE FJ (SIN BASE DE DATOS)
 ===========================================================================
 
 --- Operación #1: Registro válido de cliente (Ana María Gómez) ---
-[ÉXITO] [CLI-01] Cliente: Ana María Gómez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:09:31)
+[ÉXITO] [CLI-01] Cliente: Ana María Gómez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #1.
 
 --- Operación #2: Registro válido de cliente (Carlos Andrés Ruiz) ---
-[ÉXITO] [CLI-02] Cliente: Carlos Andrés Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:09:31)
+[ÉXITO] [CLI-02] Cliente: Carlos Andrés Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #2.
 
 --- Operación #3: Registro inválido de cliente (correo mal formado) ---
 [ERROR CONTROLADO] [FJ-001] El correo 'luisperez_sin_arroba.com' no tiene un formato válido. -> El sistema continúa operando.
 Fin de validación Op #3.
 
---- Operación #4: Creación válida de servicio: Sala de Juntas Ejecutiva ---
-[ÉXITO] [SRV-01] Sala 'Sala Innovación Norte' (Capacidad: 12 pers., sin proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:09:31)
+--- Operación #4: Registro inválido de cliente (parámetro obligatorio 'nombre' faltante) ---
+[ERROR CONTROLADO] [FJ-004] Falta el parámetro obligatorio: 'nombre' -> El sistema continúa operando.
 Fin de validación Op #4.
 
---- Operación #5: Creación válida de servicio: Alquiler Workstation Dell ---
-[ÉXITO] [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 2] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:09:31)
+--- Operación #5: Registro inválido de cliente (ID 'CLI-01' duplicado) ---
+[ERROR CONTROLADO] [FJ-006] Ya existe un cliente registrado con el ID 'CLI-01'. -> El sistema continúa operando.
 Fin de validación Op #5.
 
---- Operación #6: Creación válida de servicio: Asesoría en Arquitectura Cloud ---
-[ÉXITO] [SRV-03] Asesoría 'Consultoría Cloud AWS' [Área: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: Disponible (Creado: 2026-11-19 21:09:31)
+--- Operación #6: Creación válida de servicio: Sala de Juntas con proyector ---
+[ÉXITO] [SRV-01] Sala 'Sala Innovación Norte' (Capacidad: 12 pers., con proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #6.
 
---- Operación #7: Creación inválida de servicio (tarifa negativa) ---
-[ERROR CONTROLADO] [FJ-005] La tarifa base debe ser mayor a cero. -> El sistema continúa operando.
+--- Operación #7: Creación válida de servicio: Alquiler Workstation Dell (stock 1) ---
+[ÉXITO] [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 1] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #7.
 
---- Operación #8: Reserva válida de sala (6h con descuento automático), confirmación y procesamiento ---
-[ÉXITO] [RES-01] Reserva de Ana María Gómez -> Sala Innovación Norte (6.0h) | Total: $514,080.00 | Estado: PROCESADA (Creado: 2026-11-19 21:09:31)
+--- Operación #8: Creación válida de servicio: Asesoría en Arquitectura Cloud ---
+[ÉXITO] [SRV-03] Asesoría 'Consultoría Cloud AWS' [Área: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #8.
 
---- Operación #9: Reserva válida de equipo con descuento del 5 %, confirmación y posterior cancelación ---
-[ÉXITO] [RES-02] Reserva de Carlos Andrés Ruiz -> Workstation Precision 5570 (4.0h) | Total: $214,200.00 | Estado: CANCELADA (Creado: 2026-11-19 21:09:31)
+--- Operación #9: Creación inválida de servicio (tarifa negativa) ---
+[ERROR CONTROLADO] [FJ-005] La tarifa base debe ser mayor a cero. -> El sistema continúa operando.
 Fin de validación Op #9.
 
---- Operación #10: Intento de reserva inválido (duración <= 0) ---
-[ERROR CONTROLADO] [FJ-003] La duración de la reserva debe ser mayor a cero. -> El sistema continúa operando.
+--- Operación #10: Creación inválida de servicio (tarifa 'cien mil' no numérica, excepción encadenada) ---
+[ERROR CONTROLADO] [FJ-005] La tarifa base 'cien mil' debe ser numérica. -> El sistema continúa operando.
+    Causa original: ValueError: could not convert string to float: 'cien mil'
 Fin de validación Op #10.
 
---- Operación #11: Intento de reserva inválido (servicio no disponible) ---
-[ERROR CONTROLADO] [FJ-002] El servicio 'Consultoría Cloud AWS' no está disponible actualmente. -> El sistema continúa operando.
+--- Operación #11: Cotización polimórfica con el método sobrecargado cotizar() ---
+[ÉXITO] Cotizaciones generadas:
+    Sala 'Sala Innovación Norte' (Capacidad: 12 pers., con proyector)
+      cotizar(2)                 = $208,250.00
+      cotizar(2, 0.05)           = $183,750.00
+      cotizar(2, 0.19, 0.10)     = $187,425.00
+      cotizar(2, sin_impuesto)   = $175,000.00
+    Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 1]
+      cotizar(2)                 = $112,455.00
+      cotizar(2, 0.05)           = $99,225.00
+      cotizar(2, 0.19, 0.10)     = $101,745.00
+      cotizar(2, sin_impuesto)   = $94,500.00
+    Asesoría 'Consultoría Cloud AWS' [Área: Cloud | Consultor: Senior]
+      cotizar(2)                 = $428,400.00
+      cotizar(2, 0.05)           = $378,000.00
+      cotizar(2, 0.19, 0.10)     = $385,560.00
+      cotizar(2, sin_impuesto)   = $360,000.00
 Fin de validación Op #11.
 
---- Operación #12: Operación no permitida (cancelar la reserva RES-01 que ya fue PROCESADA) ---
-[ERROR CONTROLADO] [FJ-006] No se puede cancelar la reserva 'RES-01' porque ya fue procesada. -> El sistema continúa operando.
+--- Operación #12: Reserva válida de sala (6h con descuento automático), confirmación y procesamiento ---
+[ÉXITO] [RES-01] Reserva de Ana María Gómez -> Sala Innovación Norte (6.0h) | Total: $530,145.00 | Estado: PROCESADA (Creado: 2026-11-19 21:15:32)
 Fin de validación Op #12.
+
+--- Operación #13: Reserva de equipo, agotamiento de stock, intento fallido y cancelación con reposición ---
+    Segundo intento rechazado como se esperaba: [FJ-002] El servicio 'Workstation Precision 5570' no está disponible actualmente.
+[ÉXITO] Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 1] | Disponible: True
+Fin de validación Op #13.
+
+--- Operación #14: Intento de reserva inválido (duración <= 0) ---
+[ERROR CONTROLADO] [FJ-003] La duración de la reserva debe ser mayor a cero. -> El sistema continúa operando.
+Fin de validación Op #14.
+
+--- Operación #15: Intento de reserva inválido (cálculo inconsistente: descuento del 150 %) ---
+[ERROR CONTROLADO] [FJ-005] Porcentaje de descuento inválido: 1.5. -> El sistema continúa operando.
+Fin de validación Op #15.
+
+--- Operación #16: Intento de reserva inválido (servicio no disponible) ---
+[ERROR CONTROLADO] [FJ-002] El servicio 'Consultoría Cloud AWS' no está disponible actualmente. -> El sistema continúa operando.
+Fin de validación Op #16.
+
+--- Operación #17: Operación no permitida (cancelar la reserva RES-01 que ya fue PROCESADA) ---
+[ERROR CONTROLADO] [FJ-006] No se puede cancelar la reserva 'RES-01' porque ya fue procesada. -> El sistema continúa operando.
+Fin de validación Op #17.
+
+--- Operación #18: Intento de reserva inválido (cliente no es una instancia de Cliente) ---
+[ERROR CONTROLADO] [FJ-003] La reserva requiere una instancia válida de Cliente. -> El sistema continúa operando.
+Fin de validación Op #18.
 
 ===========================================================================
 RESUMEN FINAL DEL ESTADO EN MEMORIA (SOFTWARE FJ)
 ===========================================================================
+Operaciones ejecutadas: 18 | Exitosas: 8 | Fallidas controladas: 10
+
 Total Clientes válidos registrados : 2
-  - [CLI-01] Cliente: Ana María Gómez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:09:31)
-  - [CLI-02] Cliente: Carlos Andrés Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:09:31)
+  - [CLI-01] Cliente: Ana María Gómez | Correo: ana.gomez@empresa.com | Tel: 3104567890 (Creado: 2026-11-19 21:15:32)
+  - [CLI-02] Cliente: Carlos Andrés Ruiz | Correo: cruiz@techcol.co | Tel: 3209876543 (Creado: 2026-11-19 21:15:32)
 
 Total Servicios válidos en catálogo : 3
-  - [SRV-01] Sala 'Sala Innovación Norte' (Capacidad: 12 pers., sin proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:09:31)
-  - [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 2] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:09:31)
-  - [SRV-03] Asesoría 'Consultoría Cloud AWS' [Área: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: No disponible (Creado: 2026-11-19 21:09:31)
+  - [SRV-01] Sala 'Sala Innovación Norte' (Capacidad: 12 pers., con proyector) | Tarifa: $80,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
+  - [SRV-02] Equipo 'Workstation Precision 5570' [Tipo: Portátil | Stock: 1] | Tarifa: $45,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
+  - [SRV-03] Asesoría 'Consultoría Cloud AWS' [Área: Cloud | Consultor: Senior] | Tarifa: $120,000.00 | Estado: Disponible (Creado: 2026-11-19 21:15:32)
 
 Total Reservas registradas en memoria: 2
-  - [RES-01] Reserva de Ana María Gómez -> Sala Innovación Norte (6.0h) | Total: $514,080.00 | Estado: PROCESADA (Creado: 2026-11-19 21:09:31)
-  - [RES-02] Reserva de Carlos Andrés Ruiz -> Workstation Precision 5570 (4.0h) | Total: $214,200.00 | Estado: CANCELADA (Creado: 2026-11-19 21:09:31)
+  - [RES-01] Reserva de Ana María Gómez -> Sala Innovación Norte (6.0h) | Total: $530,145.00 | Estado: PROCESADA (Creado: 2026-11-19 21:15:32)
+  - [RES-02] Reserva de Carlos Andrés Ruiz -> Workstation Precision 5570 (4.0h) | Total: $214,200.00 | Estado: CANCELADA (Creado: 2026-11-19 21:15:32)
 
-Todos los eventos y errores quedaron auditados en: 'software_fj.log'
+Todos los eventos y errores quedaron auditados en: 'C:\Users\Michael-PC\Documents\software-fj-gestion-reservas\software_fj.log'
