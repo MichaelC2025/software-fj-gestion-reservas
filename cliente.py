@@ -116,7 +116,7 @@ class GestorClientes:
             return nuevo_cliente  # Retorna el objeto creado
         finally:
             # Bloque finally: siempre se ejecuta para garantizar trazabilidad de la operación
-            pass  # Punto de cierre seguro de la transacción en memoria
+            registrar_info(f"Intento de registro de cliente '{id_cliente}' finalizado.")
 
     def buscar_cliente(self, id_cliente):
         """Busca un cliente por su identificador dentro de la lista en memoria."""

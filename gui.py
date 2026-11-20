@@ -6,9 +6,21 @@ Interfaz gráfica opcional con Tkinter para el sistema Software FJ.
 import tkinter as tk
 from tkinter import messagebox, ttk
 from cliente import GestorClientes
-from servicios import GestorServicios, ReservaSala, AlquilerEquipo, AsesoriaEspecializada
+from servicios import GestorServicios
 from reserva import GestorReservas
-from excepciones import ErrorSistemaFJ
+from excepciones import ErrorSistemaFJ, ServicioNoDisponibleError
+from logger import registrar_error
+
+
+def _entero(valor, campo):
+    """Convierte un texto del formulario a entero; encadena el ValueError en una excepción del sistema."""
+    try:
+        return int(str(valor).strip())
+    except ValueError as e:
+        error = ServicioNoDisponibleError(f"El campo '{campo}' debe ser un número entero (recibido: '{valor}').")
+        error.__cause__ = e  # Encadenamiento explícito de la causa original
+        registrar_error(error)
+        raise error from e
 
 class AppSoftwareFJ:
     def __init__(self, root):
@@ -84,15 +96,44 @@ class AppSoftwareFJ:
             # Intenta registrar usando tu gestor (lanza excepciones personalizadas si falla)
             self.gestor_clientes.registrar_cliente(id_c, nombre, correo, telefono)
             
-            # Actualiza la tabla visual
-            self.tree_clientes.insert("", "end", values=(id_c, nombre, correo, telefono))
+            # Actualiza la tabla visual con los datos ya normalizados por la clase Cliente
+            self.refrescar_clientes()
             messagebox.showinfo("Éxito", "Cliente registrado correctamente.")
-            
+
         except ErrorSistemaFJ as e:
-            # Captura errores personalizados (como FJ-001 o FJ-004) y muestra alerta
+            # Captura errores personalizados (como FJ-001 o FJ-004) y muestra alerta (ya registrados en el log)
             messagebox.showerror("Error de Validación", str(e))
         except Exception as e:
+            registrar_error(f"Error inesperado en GUI (cliente): {type(e).__name__}: {e}")
             messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
+
+    # ------------------------------------------------------------------
+    # Refresco de tablas a partir de las listas en memoria de los gestores
+    # ------------------------------------------------------------------
+    def refrescar_clientes(self):
+        self.tree_clientes.delete(*self.tree_clientes.get_children())
+        for c in self.gestor_clientes.clientes:
+            self.tree_clientes.insert("", "end", values=(c.id_entidad, c.nombre, c.correo, c.telefono))
+
+    def refrescar_servicios(self):
+        self.tree_servicios.delete(*self.tree_servicios.get_children())
+        for s in self.gestor_servicios.servicios:
+            estado = "Disponible" if s.disponible else "No disponible"
+            self.tree_servicios.insert(
+                "", "end", values=(s.id_entidad, s.nombre, f"${s.tarifa_base:,.2f}", f"{s.describir_servicio()} | {estado}")
+            )
+
+    def refrescar_reservas(self):
+        seleccion = self.tree_reservas.selection()  # Conserva la fila seleccionada tras el refresco
+        self.tree_reservas.delete(*self.tree_reservas.get_children())
+        for r in self.gestor_reservas.reservas:
+            self.tree_reservas.insert(
+                "", "end", iid=r.id_entidad,
+                values=(r.id_entidad, r.cliente.nombre, r.servicio.nombre, f"${r.costo_total:,.2f}", r.estado),
+            )
+        existentes = [i for i in seleccion if self.tree_reservas.exists(i)]
+        if existentes:
+            self.tree_reservas.selection_set(existentes)
 
     def crear_pestana_servicios(self):
         frame = ttk.Frame(self.notebook)
@@ -148,20 +189,24 @@ class AppSoftwareFJ:
             tipo = self.combo_tipo_serv.get()
             extra = self.entry_extra.get()
 
-            # Polimorfismo según el tipo de servicio seleccionado
+            datos = {"id_servicio": id_s, "nombre": nombre, "tarifa_base": tarifa}
+            # Polimorfismo según el tipo de servicio seleccionado (la fábrica registra los errores en el log)
             if tipo == "Sala":
-                servicio = ReservaSala(id_s, nombre, tarifa, capacidad_personas=int(extra))
+                datos["capacidad_personas"] = _entero(extra, "Capacidad")
+                self.gestor_servicios.crear_servicio("sala", **datos)
             elif tipo == "Equipo":
-                servicio = AlquilerEquipo(id_s, nombre, tarifa, tipo_equipo="Tecnológico", cantidad_disponible=int(extra))
+                datos.update(tipo_equipo="Tecnológico", cantidad_disponible=_entero(extra, "Stock"))
+                self.gestor_servicios.crear_servicio("equipo", **datos)
             else:
-                servicio = AsesoriaEspecializada(id_s, nombre, tarifa, especialidad="Sistemas", nivel_consultor=extra if extra else "Senior")
+                datos.update(especialidad="Sistemas", nivel_consultor=extra.strip() if extra.strip() else "Senior")
+                self.gestor_servicios.crear_servicio("asesoria", **datos)
 
-            self.gestor_servicios.registrar_servicio(servicio)
-            self.tree_servicios.insert("", "end", values=(id_s, nombre, f"${float(tarifa):,.2f}", servicio.describir_servicio()))
+            self.refrescar_servicios()
             messagebox.showinfo("Éxito", "Servicio registrado correctamente.")
         except ErrorSistemaFJ as e:
             messagebox.showerror("Error de Validación (Servicio)", str(e))
         except Exception as e:
+            registrar_error(f"Error inesperado en GUI (servicio): {type(e).__name__}: {e}")
             messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
 
     def crear_pestana_reservas(self):
@@ -224,12 +269,13 @@ class AppSoftwareFJ:
             servicio_obj = self.gestor_servicios.buscar_servicio(id_s)
 
             reserva = self.gestor_reservas.crear_reserva(id_r, cliente_obj, servicio_obj, duracion)
-            
-            self.tree_reservas.insert("", "end", iid=id_r, values=(id_r, cliente_obj.nombre, servicio_obj.nombre, f"${reserva.costo_total:,.2f}", reserva.estado))
+
+            self.refrescar_reservas()
             messagebox.showinfo("Éxito", f"Reserva creada con éxito. Total: ${reserva.costo_total:,.2f}")
         except ErrorSistemaFJ as e:
             messagebox.showerror("Error de Reserva", str(e))
         except Exception as e:
+            registrar_error(f"Error inesperado en GUI (reserva): {type(e).__name__}: {e}")
             messagebox.showerror("Error", f"No se pudo completar la reserva: {e}")
 
     def accion_cambiar_estado(self, accion):
@@ -243,17 +289,15 @@ class AppSoftwareFJ:
             # Ejecuta la acción y captura excepciones personalizadas (como FJ-006 si ya está procesada)
             reserva_actualizada = self.gestor_reservas.ejecutar_accion(id_r, accion)
             
-            # Actualiza el estado visual en la tabla
-            self.tree_reservas.item(id_r, values=(
-                id_r, 
-                reserva_actualizada.cliente.nombre, 
-                reserva_actualizada.servicio.nombre, 
-                f"${reserva_actualizada.costo_total:,.2f}", 
-                reserva_actualizada.estado
-            ))
+            # Actualiza reservas y servicios (el stock de equipos cambia al confirmar/cancelar)
+            self.refrescar_reservas()
+            self.refrescar_servicios()
             messagebox.showinfo("Actualizado", f"La reserva pasó a estado: {reserva_actualizada.estado}")
         except ErrorSistemaFJ as e:
             messagebox.showerror("Operación No Permitida", str(e))
+        except Exception as e:
+            registrar_error(f"Error inesperado en GUI (cambio de estado): {type(e).__name__}: {e}")
+            messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()

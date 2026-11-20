@@ -5,8 +5,10 @@ Autor: Sebastian Aguirre Vallejo
 """
 
 from abc import abstractmethod  # Decorador para definir métodos abstractos en Servicio
+from typing import overload  # Permite declarar firmas sobrecargadas de un mismo método
 from entidad import EntidadSistema  # Clase abstracta base del sistema
 from excepciones import (  # Excepciones personalizadas definidas en excepciones.py
+    ErrorSistemaFJ,
     ServicioNoDisponibleError,
     ParametroFaltanteError,
     CalculoCostoError,
@@ -74,6 +76,13 @@ class Servicio(EntidadSistema):
 
     def _aplicar_ajustes_costo(self, subtotal, impuesto=0.19, descuento=0.0, recargo_extra=0.0):
         """Método auxiliar sobrecargado por parámetros opcionales para calcular impuestos, descuentos y recargos."""
+        try:
+            impuesto = float(impuesto)  # Convierte el impuesto a número
+            descuento = float(descuento)  # Convierte el descuento a número
+            recargo_extra = float(recargo_extra)  # Convierte el recargo a número
+        except (ValueError, TypeError) as e:
+            # Encadenamiento: un dato no numérico se transforma en un error de cálculo del sistema
+            raise CalculoCostoError("Impuesto, descuento y recargo deben ser valores numéricos.") from e
         # Valida que los porcentajes y recargos estén dentro de rangos lógicos
         if not (0 <= impuesto <= 1):  # El impuesto debe estar entre 0 % (0.0) y 100 % (1.0)
             raise CalculoCostoError(f"Porcentaje de impuesto inválido: {impuesto}.")  # Lanza FJ-005
@@ -86,6 +95,51 @@ class Servicio(EntidadSistema):
         base_gravable = (subtotal - monto_descuento) + recargo_extra  # Resta descuento y suma recargo
         monto_impuesto = base_gravable * impuesto  # Calcula el impuesto sobre la base gravable
         return round(base_gravable + monto_impuesto, 2)  # Retorna el total redondeado a 2 decimales
+
+    @staticmethod
+    def _validar_duracion(duracion):
+        """Convierte y valida la duración usada en los cálculos de costo."""
+        if duracion is None:  # Parámetro obligatorio
+            raise ParametroFaltanteError("duracion")  # Lanza FJ-004
+        try:
+            duracion_num = float(duracion)  # Convierte a número
+        except (ValueError, TypeError) as e:
+            raise CalculoCostoError(f"La duración '{duracion}' no es numérica.") from e  # Encadenamiento
+        if duracion_num <= 0:  # Duraciones nulas o negativas no tienen sentido
+            raise CalculoCostoError("La duración debe ser mayor a cero.")  # Lanza FJ-005
+        return duracion_num
+
+    # ------------------------------------------------------------------
+    # MÉTODO SOBRECARGADO: cotizar()
+    # Python no admite varias definiciones con el mismo nombre, por lo que la
+    # sobrecarga se implementa con typing.overload (firmas de cada variante)
+    # más una única implementación que despacha según los argumentos recibidos.
+    # ------------------------------------------------------------------
+    @overload
+    def cotizar(self, duracion: float) -> float: ...  # Variante 1: solo duración (IVA 19 % por defecto)
+
+    @overload
+    def cotizar(self, duracion: float, impuesto: float) -> float: ...  # Variante 2: impuesto personalizado
+
+    @overload
+    def cotizar(self, duracion: float, impuesto: float, descuento: float) -> float: ...  # Variante 3: + descuento
+
+    @overload
+    def cotizar(self, duracion: float, *, sin_impuesto: bool) -> float: ...  # Variante 4: exento de impuestos
+
+    def cotizar(self, duracion, *args, sin_impuesto=False, **kwargs):
+        """Implementación real del método sobrecargado cotizar()."""
+        if len(args) > 2:  # Ninguna variante acepta más de tres argumentos posicionales
+            raise CalculoCostoError(f"cotizar() recibe máximo 3 argumentos posicionales ({len(args) + 1} recibidos).")
+        if sin_impuesto:  # Variante 4
+            if args:
+                raise CalculoCostoError("No se puede indicar un impuesto en una cotización exenta.")
+            return self.calcular_costo(duracion, impuesto=0.0, **kwargs)
+        if len(args) == 0:  # Variante 1
+            return self.calcular_costo(duracion, **kwargs)
+        if len(args) == 1:  # Variante 2
+            return self.calcular_costo(duracion, impuesto=args[0], **kwargs)
+        return self.calcular_costo(duracion, impuesto=args[0], descuento=args[1], **kwargs)  # Variante 3
 
     @abstractmethod
     def calcular_costo(self, duracion, impuesto=0.19, descuento=0.0, recargo_extra=0.0):
@@ -111,8 +165,20 @@ class ReservaSala(Servicio):
         self.__tiene_proyector = False  # Inicializa indicador de proyector
         super().__init__(id_servicio, nombre, tarifa_base, disponible)  # Llama al constructor de Servicio
         self.capacidad_personas = capacidad_personas  # Valida y asigna capacidad
-        self.tiene_proyector = bool(tiene_proyector)  # Asigna disponibilidad de proyector
+        self.tiene_proyector = tiene_proyector  # Valida y asigna el indicador de proyector
         self.validar_datos()  # Ejecuta validación integral
+
+    @property
+    def tiene_proyector(self):
+        """Getter que indica si la sala cuenta con proyector."""
+        return self.__tiene_proyector  # Retorna el indicador encapsulado
+
+    @tiene_proyector.setter
+    def tiene_proyector(self, valor):
+        """Setter del indicador de proyector (debe ser booleano)."""
+        if not isinstance(valor, bool):  # Evita valores ambiguos como "no" (que serían True)
+            raise ServicioNoDisponibleError("El indicador de proyector debe ser booleano (True/False).")
+        self.__tiene_proyector = valor  # Guarda el indicador validado
 
     @property
     def capacidad_personas(self):
@@ -124,7 +190,7 @@ class ReservaSala(Servicio):
         """Setter de capacidad asegurando que sea un entero positivo."""
         if valor is None:  # Verifica que el parámetro exista
             raise ParametroFaltanteError("capacidad_personas")  # Lanza FJ-004
-        if not isinstance(valor, int) or valor <= 0:  # Debe ser entero mayor a cero
+        if isinstance(valor, bool) or not isinstance(valor, int) or valor <= 0:  # Debe ser entero mayor a cero
             raise ServicioNoDisponibleError("La capacidad de la sala debe ser un entero mayor a cero.")
         self.__capacidad_personas = valor  # Almacena la capacidad validada
 
@@ -136,8 +202,7 @@ class ReservaSala(Servicio):
 
     def calcular_costo(self, duracion, impuesto=0.19, descuento=0.0, recargo_extra=0.0):
         """Calcula el costo de la sala por hora; aplica descuento automático del 10 % si dura 5 o más horas."""
-        if duracion is None or duracion <= 0:  # Valida duración positiva
-            raise CalculoCostoError("La duración de reserva de sala debe ser mayor a cero.")  # Lanza FJ-005
+        duracion = self._validar_duracion(duracion)  # Valida y convierte la duración (FJ-004 / FJ-005)
         subtotal = self.tarifa_base * duracion  # Costo base por horas
         if self.__tiene_proyector:  # Suma tarifa fija de uso de proyector si aplica
             subtotal += 15000.0  # Cargo fijo por equipamiento audiovisual
@@ -156,6 +221,7 @@ class AlquilerEquipo(Servicio):
     def __init__(self, id_servicio, nombre, tarifa_base, tipo_equipo, cantidad_disponible, disponible=True):
         self.__tipo_equipo = None  # Inicializa tipo de equipo
         self.__cantidad_disponible = 0  # Inicializa inventario disponible
+        self.__agotado_por_stock = False  # Distingue "agotado" de "deshabilitado manualmente"
         super().__init__(id_servicio, nombre, tarifa_base, disponible)  # Inicializa clase padre
         self.tipo_equipo = tipo_equipo  # Valida y asigna tipo de equipo
         self.cantidad_disponible = cantidad_disponible  # Valida y asigna stock
@@ -171,11 +237,15 @@ class AlquilerEquipo(Servicio):
         """Setter de unidades disponibles."""
         if valor is None:  # Verifica parámetro obligatorio
             raise ParametroFaltanteError("cantidad_disponible")  # Lanza FJ-004
-        if not isinstance(valor, int) or valor < 0:  # No permite stock negativo
-            raise ServicioNoDisponibleError("La cantidad disponible de equipos no puede ser negativa.")
+        if isinstance(valor, bool) or not isinstance(valor, int) or valor < 0:  # No permite stock negativo
+            raise ServicioNoDisponibleError("La cantidad disponible de equipos debe ser un entero no negativo.")
         self.__cantidad_disponible = valor  # Guarda cantidad
         if self.__cantidad_disponible == 0:  # Si no quedan equipos, marca como no disponible
             self.disponible = False  # Actualiza estado
+            self.__agotado_por_stock = True  # Recuerda que la causa fue el stock
+        elif self.__agotado_por_stock:  # Si se repone stock tras agotarse, se reactiva el servicio
+            self.disponible = True
+            self.__agotado_por_stock = False
 
     @property
     def tipo_equipo(self):
@@ -197,8 +267,7 @@ class AlquilerEquipo(Servicio):
 
     def calcular_costo(self, duracion, impuesto=0.19, descuento=0.0, recargo_extra=0.0):
         """Calcula el costo de alquiler incluyendo póliza de seguro obligatorio del 5 % sobre el subtotal."""
-        if duracion is None or duracion <= 0:  # Valida duración positiva
-            raise CalculoCostoError("La duración del alquiler debe ser mayor a cero.")  # Lanza FJ-005
+        duracion = self._validar_duracion(duracion)  # Valida y convierte la duración (FJ-004 / FJ-005)
         subtotal = self.tarifa_base * duracion  # Costo base por tiempo de uso
         seguro_equipo = subtotal * 0.05  # Calcula seguro obligatorio del 5 %
         return self._aplicar_ajustes_costo(subtotal, impuesto, descuento, recargo_extra + seguro_equipo)
@@ -252,8 +321,7 @@ class AsesoriaEspecializada(Servicio):
 
     def calcular_costo(self, duracion, impuesto=0.19, descuento=0.0, recargo_extra=0.0):
         """Calcula el costo aplicando un multiplicador según la experiencia del consultor."""
-        if duracion is None or duracion <= 0:  # Valida duración positiva
-            raise CalculoCostoError("La duración de la asesoría debe ser mayor a cero.")  # Lanza FJ-005
+        duracion = self._validar_duracion(duracion)  # Valida y convierte la duración (FJ-004 / FJ-005)
         factores = {"Junior": 1.0, "Semi-Senior": 1.25, "Senior": 1.5}  # Factor multiplicador por nivel
         subtotal = (self.tarifa_base * factores[self.__nivel_consultor]) * duracion  # Aplica tarifa ajustada
         return self._aplicar_ajustes_costo(subtotal, impuesto, descuento, recargo_extra)  # Calcula total
@@ -273,6 +341,38 @@ class GestorServicios:
     def servicios(self):
         """Retorna una copia de la lista de servicios para evitar alteraciones externas."""
         return list(self.__servicios)  # Devuelve copia segura
+
+    # Tipos admitidos por la fábrica de servicios (extensible: basta con agregar una entrada)
+    TIPOS_SERVICIO = {
+        "sala": ReservaSala,
+        "equipo": AlquilerEquipo,
+        "asesoria": AsesoriaEspecializada,
+    }
+
+    def crear_servicio(self, tipo, **datos):
+        """Construye y registra un servicio por tipo; todo error de creación queda en el log."""
+        servicio = None  # Variable auxiliar para el servicio creado
+        try:
+            if not tipo or str(tipo).strip() == "":  # El tipo es obligatorio
+                raise ParametroFaltanteError("tipo")  # Lanza FJ-004
+            clase = self.TIPOS_SERVICIO.get(str(tipo).strip().lower())  # Busca la clase según el tipo
+            if clase is None:
+                raise ServicioNoDisponibleError(
+                    f"Tipo de servicio '{tipo}' no ofrecido. Tipos válidos: {list(self.TIPOS_SERVICIO)}."
+                )
+            servicio = clase(**datos)  # Instancia polimórfica del servicio especializado
+        except ErrorSistemaFJ as e:
+            registrar_error(e)  # Registra errores de validación (FJ-002, FJ-004, FJ-005...)
+            raise  # Relanza al flujo llamador
+        except TypeError as e:
+            # Encadenamiento: argumentos faltantes o desconocidos en el constructor
+            error_encadenado = ParametroFaltanteError(f"datos del servicio '{tipo}' ({e})")
+            registrar_error(error_encadenado)
+            raise error_encadenado from e
+        else:
+            return self.registrar_servicio(servicio)  # Solo se registra si la construcción fue exitosa
+        finally:
+            registrar_info(f"Intento de creación de servicio tipo '{tipo}' finalizado.")  # Se ejecuta siempre
 
     def registrar_servicio(self, servicio):
         """Agrega un objeto Servicio validado a la lista en memoria y registra el evento en el log."""
@@ -295,7 +395,7 @@ class GestorServicios:
             registrar_info(f"Servicio registrado: {servicio}")  # Registra éxito en el log
             return servicio  # Retorna el servicio registrado
         finally:
-            pass  # Cierre controlado de la operación
+            registrar_info("Operación de registro de servicio finalizada.")  # Se ejecuta siempre (trazabilidad)
 
     def buscar_servicio(self, id_servicio):
         """Busca un servicio por su identificador; lanza excepción si no existe."""

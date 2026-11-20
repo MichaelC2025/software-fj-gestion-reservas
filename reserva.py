@@ -189,7 +189,7 @@ class GestorReservas:
             registrar_info(f"Reserva creada en estado PENDIENTE: {nueva_reserva}")  # Registra en log
             return nueva_reserva  # Retorna la reserva creada
         finally:
-            pass  # Garantiza cierre limpio de la transacción
+            registrar_info(f"Intento de creación de reserva '{id_reserva}' finalizado.")  # Se ejecuta siempre
 
     def ejecutar_accion(self, id_reserva, accion):
         """Permite confirmar, cancelar o procesar una reserva existente por su ID."""
@@ -209,7 +209,12 @@ class GestorReservas:
         except (ReservaInvalidaError, ServicioNoDisponibleError, OperacionNoPermitidaError) as e:
             registrar_error(e)  # Registra error en software_fj.log
             raise  # Relanza al programa principal
+        except Exception as e:
+            # Encadenamiento ante cualquier fallo inesperado durante el cambio de estado
+            error_encadenado = OperacionNoPermitidaError(f"Error inesperado al '{accion}' la reserva '{id_reserva}': {e}")
+            registrar_error(error_encadenado)
+            raise error_encadenado from e
         else:
             return reserva  # Retorna la reserva actualizada si no hubo errores
         finally:
-            pass  # Punto de cierre de la operación
+            registrar_info(f"Acción '{accion}' sobre reserva '{id_reserva}' finalizada.")  # Se ejecuta siempre
