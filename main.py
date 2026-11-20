@@ -1,8 +1,8 @@
-"""
+﻿"""
 main.py
 Punto de entrada principal y simulación de operaciones del sistema Software FJ.
 Integra gestión de clientes, servicios y reservas en memoria con manejo avanzado de excepciones.
-Autor: [Nombre del Integrante / Equipo]
+Autor: Grupo 213023_348
 """
 
 from cliente import GestorClientes  # Importa el gestor en memoria de clientes
